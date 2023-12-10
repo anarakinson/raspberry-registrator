@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import argparse
 import RPi.GPIO as gpio
+import time, os
 
 
 
@@ -12,6 +13,9 @@ def parse_args():
     parser.add_argument("-g", "--gamma", help="input gamma", default="1.")
     parser.add_argument("-c", "--camera", help="number of camera", default=0)
     parser.add_argument("-r", "--rotate", help="rotate image: 90/180/270", default=0)
+    parser.add_argument("-s", "--save", help="save data with interval", default=0)
+    parser.add_argument("-d", "--data-dir", help="where to save frames", default="./data")
+    parser.add_argument("-tz", "--timezone", help="", default="Europe/London")
     args = parser.parse_args()
     return args
 
@@ -35,6 +39,10 @@ def main():
 
     args = parse_args() 
 
+    os.environ['TZ'] = f'{args.timezone}'
+    time.tzset()
+
+
     gpio.setmode(gpio.BCM)
 
     # define a video capture object
@@ -43,6 +51,8 @@ def main():
     vid.set(4, 480) # height
 
     gamma = float(args.gamma)
+
+    counter = 1000
 
     while(True):
 
@@ -54,15 +64,22 @@ def main():
             break
 
         if args.rotate == "90":
-            frame = cv2.rotate(frame, cv2.cv2.ROTATE_90_CLOCKWISE)
+            frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
         if args.rotate == "270":
-            frame = cv2.rotate(frame, cv2.cv2.ROTATE_90_COUNTERCLOCKWISE)
+            frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
         if args.rotate == "180":
-            frame = cv2.rotate(frame, cv2.cv2.ROTATE_180)
+            frame = cv2.rotate(frame, cv2.ROTATE_180)
 
 
         frame = adjusted(frame, gamma)
-#        frame = white_balance(frame)
+        frame = white_balance(frame)
+
+        curr_time = time.strftime("%d %b %Y - %H:%M:%S")
+        font_scale = 0.6
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        org = (20, 20)
+        frame = cv2.putText(frame, curr_time, org, font,  
+                   font_scale, (0, 255, 0), 1, cv2.LINE_AA) 
 
 
         # Display the resulting frame
@@ -72,6 +89,15 @@ def main():
             gamma += 0.1
         if (np.sum(frame) > 100000000) and gamma > 0.5:
             gamma -= 0.1
+
+        if int(args.save) > 0 and counter % int(args.save) == 0:
+            number = counter // int(args.save)
+            if number > 1_000_000:
+                counter = 0
+            number = str(number)
+            number = "0" * (6 - len(number)) + number
+            cv2.imwrite(f"./data/{args.data_dir}/img{number}.jpg", frame)
+        counter +=1
 
         # the 'q' button is set as the
         # quitting button you may use any
