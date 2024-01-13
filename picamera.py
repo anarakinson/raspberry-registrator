@@ -75,6 +75,7 @@ def main():
         frame = white_balance(frame)
 
         curr_time = time.strftime("%d %b %Y - %H:%M:%S")
+        curr_time += f" cam: {args.camera}"
         font_scale = 0.6
         font = cv2.FONT_HERSHEY_SIMPLEX
         org = (20, 20)

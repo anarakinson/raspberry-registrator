@@ -3,7 +3,7 @@
 
 import os
 import moviepy.video.io.ImageSequenceClip
-image_folder='data'
+image_folder='data/data4'
 output_path='my_video2.mp4'
 
 fps=24
